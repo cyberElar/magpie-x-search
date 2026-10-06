@@ -18,10 +18,10 @@ The package has no npm dependencies and requires no Python packages.
 
 1. Sign in to Grok in magpie through `@magpie-community/opencode-grok-auth`.
    The plugin supplies OAuth credentials, token refresh, and the upstream proxy.
-2. Install the npm release tarball:
+2. Install the npm command:
 
    ```sh
-   npm install --global --allow-remote=root https://github.com/cyberElar/magpie-x-search/releases/download/v1.2.0/magpie-x-search-1.2.0.tgz
+   npm install --global magpie-x-search
    ```
 
 3. Register the installed command:
@@ -57,22 +57,28 @@ Set `X_SEARCH_PYTHON` to an executable path if detection fails.
 The value must not contain command arguments. Paths with spaces work without extra quotes in the value.
 The launcher writes startup failures to stderr and keeps MCP stdout free of startup messages.
 
+You can also run the registry package with `npx`:
+
+```sh
+npx -y magpie-x-search
+```
+
+For a pinned MCP registration, use:
+
+```sh
+codex mcp add x-search -- npx -y magpie-x-search@1.2.0
+```
+
+The [npm package page](https://www.npmjs.com/package/magpie-x-search) lists registry releases.
+The GitHub Release tarball remains an alternative installation source:
+
+```sh
+npm install --global --allow-remote=root https://github.com/cyberElar/magpie-x-search/releases/download/v1.2.0/magpie-x-search-1.2.0.tgz
+```
+
 npm 12 requires `--allow-remote=root` for this GitHub tarball.
 The option allows the direct tarball download for that command and does not change global npm settings.
 Registry installs do not need this option.
-
-You can also run the release with `npx`:
-
-```sh
-npx -y --allow-remote=root --package=https://github.com/cyberElar/magpie-x-search/releases/download/v1.2.0/magpie-x-search-1.2.0.tgz magpie-x-search
-```
-
-Registry commands become available after the first npm registry release:
-
-```sh
-npm install --global magpie-x-search
-npx -y magpie-x-search
-```
 
 For a source installation, clone the repository and register the Python entry point:
 
