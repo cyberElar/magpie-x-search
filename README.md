@@ -21,7 +21,7 @@ The package has no npm dependencies and requires no Python packages.
 2. Install the npm release tarball:
 
    ```sh
-   npm install --global https://github.com/cyberElar/magpie-x-search/releases/download/v1.2.0/magpie-x-search-1.2.0.tgz
+   npm install --global --allow-remote=root https://github.com/cyberElar/magpie-x-search/releases/download/v1.2.0/magpie-x-search-1.2.0.tgz
    ```
 
 3. Register the installed command:
@@ -57,10 +57,14 @@ Set `X_SEARCH_PYTHON` to an executable path if detection fails.
 The value must not contain command arguments. Paths with spaces work without extra quotes in the value.
 The launcher writes startup failures to stderr and keeps MCP stdout free of startup messages.
 
+npm 12 requires `--allow-remote=root` for this GitHub tarball.
+The option allows the direct tarball download for that command and does not change global npm settings.
+Registry installs do not need this option.
+
 You can also run the release with `npx`:
 
 ```sh
-npx -y --package=https://github.com/cyberElar/magpie-x-search/releases/download/v1.2.0/magpie-x-search-1.2.0.tgz magpie-x-search
+npx -y --allow-remote=root --package=https://github.com/cyberElar/magpie-x-search/releases/download/v1.2.0/magpie-x-search-1.2.0.tgz magpie-x-search
 ```
 
 Registry commands become available after the first npm registry release:
