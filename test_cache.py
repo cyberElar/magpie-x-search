@@ -1,4 +1,5 @@
 import concurrent.futures
+from contextlib import closing
 import multiprocessing
 import sqlite3
 import tempfile
@@ -62,7 +63,7 @@ class CacheTests(unittest.TestCase):
         bypass = self.run_cache("bypass")
         self.assertEqual(bypass["cache"]["status"], "bypass")
         self.assertEqual(self.run_cache()["text"], "2")
-        with sqlite3.connect(self.path) as db:
+        with closing(sqlite3.connect(self.path)) as db, db:
             db.execute("UPDATE results SET expires=0")
         self.assertEqual(self.run_cache()["text"], "4")
         self.cache.ttl = 0
@@ -78,10 +79,10 @@ class CacheTests(unittest.TestCase):
 
     def test_expired_owner_is_replaced(self):
         self.cache.initialize()
-        with sqlite3.connect(self.path) as db:
+        with closing(sqlite3.connect(self.path)) as db, db:
             db.execute("INSERT INTO leases VALUES ('key','dead-process',0)")
         self.assertEqual(self.run_cache()["cache"]["status"], "miss")
-        with sqlite3.connect(self.path) as db:
+        with closing(sqlite3.connect(self.path)) as db, db:
             self.assertEqual(db.execute("SELECT count(*) FROM leases").fetchone()[0], 0)
 
     def test_live_owner_renews_lease(self):
@@ -97,7 +98,7 @@ class CacheTests(unittest.TestCase):
             try:
                 # The owner must remain live beyond the original lease duration.
                 time.sleep(0.25)
-                with sqlite3.connect(self.path) as db:
+                with closing(sqlite3.connect(self.path)) as db, db:
                     expires = db.execute("SELECT expires FROM leases WHERE key='key'").fetchone()[0]
                 self.assertGreater(expires, time.time())
             finally:
@@ -106,7 +107,7 @@ class CacheTests(unittest.TestCase):
 
     def test_live_owner_is_not_replaced_when_waiter_times_out(self):
         self.cache.initialize()
-        with sqlite3.connect(self.path) as db:
+        with closing(sqlite3.connect(self.path)) as db, db:
             db.execute("INSERT INTO leases VALUES ('key','live-process',?)", (time.time()+30,))
         scope = RequestScope(0.1)
         try:
