@@ -8,7 +8,7 @@ import threading
 from search_backend import MagpieClient, RequestScope, SearchError, Settings
 from search_cache import SearchService
 
-VERSION = "1.1.0"
+VERSION = "1.2.0"
 PROTOCOLS = ("2024-11-05", "2025-03-26", "2025-06-18", "2025-11-25")
 TOOL = {
     "name": "x_search",

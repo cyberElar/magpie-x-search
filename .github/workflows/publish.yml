@@ -1,0 +1,44 @@
+name: Publish npm package
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag, such as v1.2.0'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false
+      - name: Verify release tag
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          node -e 'const p=require("./package.json"); if(process.env.RELEASE_TAG!==`v${p.version}`) process.exit(1)'
+          test "$(git describe --tags --exact-match)" = "$RELEASE_TAG"
+      - run: npm ci --ignore-scripts
+      - run: npm test
+      - run: npm pack
+      - run: npm publish ./magpie-x-search-*.tgz --access public --provenance
