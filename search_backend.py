@@ -86,7 +86,7 @@ class Settings:
     model: str = "grok-plugin/grok-4.7"
     timeout: float = 150
     max_tool_calls: int = 5
-    max_output_tokens: int = 4096
+    max_output_tokens: int | None = None
     cache_ttl: float = 300
     cache_path: str = ""
     workers: int = 4
@@ -100,7 +100,8 @@ class Settings:
             model=env.get("X_SEARCH_MODEL", cls.model),
             timeout=number(env, "X_SEARCH_TIMEOUT_SEC", 150, 1, 3600),
             max_tool_calls=number(env, "X_SEARCH_MAX_TOOL_CALLS", 5, 1, 100, True),
-            max_output_tokens=number(env, "X_SEARCH_MAX_OUTPUT_TOKENS", 4096, 256, 32768, True),
+            max_output_tokens=(number(env, "X_SEARCH_MAX_OUTPUT_TOKENS", None, 256, 32768, True)
+                               if "X_SEARCH_MAX_OUTPUT_TOKENS" in env else None),
             cache_ttl=number(env, "X_SEARCH_CACHE_TTL_SEC", 300, 0, 86400),
             cache_path=env.get("X_SEARCH_CACHE_PATH", str(cache_root / "magpie-x-search" / "cache.sqlite3")),
             workers=number(env, "X_SEARCH_WORKERS", 4, 1, 32, True),
@@ -172,9 +173,9 @@ def search_request(args, settings=None):
             tool[key] = value
     if tool.get("from_date", "") > tool.get("to_date", "9999-12-31"):
         raise SearchError("invalid_arguments", "from_date must not be after to_date")
-    return {
+    request = {
         "model": settings.model, "stream": True, "max_tool_calls": settings.max_tool_calls,
-        "max_output_tokens": settings.max_output_tokens, "reasoning": {"effort": "low"}, "tools": [tool],
+        "reasoning": {"effort": "low"}, "tools": [tool],
         "text": {"format": {"type": "json_schema", "name": "x_search_result", "schema": ANSWER_SCHEMA, "strict": True}},
         "instructions": (
             "Execute native x_search for the supplied public X query. Use keyword, semantic, user or thread search "
@@ -187,6 +188,9 @@ def search_request(args, settings=None):
         ),
         "input": [{"role": "user", "content": query.strip()}],
     }
+    if settings.max_output_tokens is not None:
+        request["max_output_tokens"] = settings.max_output_tokens
+    return request
 
 
 def completed_response(stream, scope=None):
@@ -221,7 +225,7 @@ def completed_response(stream, scope=None):
                     raise SearchError("upstream_protocol", "Grok returned an invalid completion")
                 return response
             if kind == "response.incomplete":
-                raise SearchError("incomplete", "Grok output was truncated; increase X_SEARCH_MAX_OUTPUT_TOKENS")
+                raise SearchError("incomplete", "Grok returned an incomplete response; check provider output limits")
             if kind in ("error", "response.failed"):
                 raise SearchError("upstream_error", "Grok returned a search error; check magpie provider status")
     if scope:
@@ -348,6 +352,9 @@ class MagpieClient:
             result = search_result(completed_response(response, scope))
             scope.check()
             return result
+        except TimeoutError as exc:
+            scope.check()
+            raise SearchError("timeout", "A network operation to local magpie timed out") from exc
         except (OSError, http.client.HTTPException) as exc:
             scope.check()
             raise SearchError("connection", "Cannot complete the request to local magpie; check the gateway") from exc

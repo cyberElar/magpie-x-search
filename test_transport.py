@@ -4,6 +4,7 @@ import socket
 import threading
 import time
 import unittest
+from unittest.mock import patch
 
 from search_backend import MagpieClient, RequestScope, SearchError, Settings, search_request
 from test_x_search import response, sse
@@ -92,6 +93,7 @@ class TransportTests(unittest.TestCase):
         try:
             self.assertEqual(self.run_search('ok', scope)["text"], "found")
             self.assertEqual(self.http.requests[-1]["tools"], [{"type": "x_search"}])
+            self.assertNotIn("max_output_tokens", self.http.requests[-1])
             self.assertEqual(self.http.requests[-1]["text"]["format"]["type"], 'json_schema')
         finally:
             scope.close()
@@ -105,6 +107,16 @@ class TransportTests(unittest.TestCase):
             self.assertEqual(caught.exception.code, 'rate_limited')
             self.assertEqual(caught.exception.details['retry_after_sec'], 12)
             self.assertEqual(len(self.http.requests), before+1)
+        finally:
+            scope.close()
+
+    def test_socket_timeout_before_timer_fires_is_still_a_timeout(self):
+        scope = RequestScope(2)
+        try:
+            with patch('search_backend.http.client.HTTPConnection.connect', side_effect=TimeoutError()):
+                with self.assertRaises(SearchError) as caught:
+                    self.run_search('ok', scope)
+            self.assertEqual(caught.exception.code, 'timeout')
         finally:
             scope.close()
 

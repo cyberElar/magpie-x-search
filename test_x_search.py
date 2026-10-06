@@ -33,7 +33,7 @@ class BackendTests(unittest.TestCase):
         self.assertEqual(req["tools"], [{"type": "x_search", "allowed_x_handles": ["test"],
                                          "from_date": "2026-10-01", "to_date": "2026-10-06"}])
         self.assertEqual(req["max_tool_calls"], 5)
-        self.assertEqual(req["max_output_tokens"], 4096)
+        self.assertNotIn("max_output_tokens", req)
         self.assertEqual(req["text"]["format"]["type"], "json_schema")
         self.assertEqual(req, search_request({**args, "cache_mode": "refresh"}, settings))
 
@@ -47,10 +47,15 @@ class BackendTests(unittest.TestCase):
             self.assertEqual(caught.exception.code, "invalid_arguments")
 
     def test_configuration(self):
+        defaults = Settings.from_env({})
+        self.assertIsNone(defaults.max_output_tokens)
+        self.assertNotIn("max_output_tokens", search_request({"query": "q"}, defaults))
         settings = Settings.from_env({"X_SEARCH_MAX_TOOL_CALLS": "8", "X_SEARCH_MAX_OUTPUT_TOKENS": "6000",
                                       "X_SEARCH_TIMEOUT_SEC": "90", "X_SEARCH_CACHE_TTL_SEC": "0"})
         self.assertEqual((settings.max_tool_calls, settings.max_output_tokens, settings.timeout), (8, 6000, 90))
+        self.assertEqual(search_request({"query": "q"}, settings)["max_output_tokens"], 6000)
         for env in ({"X_SEARCH_TIMEOUT_SEC": "nan"}, {"X_SEARCH_WORKERS": "0"}, {"X_SEARCH_MAX_TOOL_CALLS": "1.5"},
+                    {"X_SEARCH_MAX_OUTPUT_TOKENS": ""}, {"X_SEARCH_MAX_OUTPUT_TOKENS": "0"},
                     {"X_SEARCH_MAGPIE_URL": "http://example.com/responses"},
                     {"X_SEARCH_MAGPIE_URL": "http://secret@127.0.0.1/responses"}):
             with self.subTest(env=env), self.assertRaises(SearchError):

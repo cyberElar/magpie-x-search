@@ -69,7 +69,9 @@ Only `query` is required. Handle filters accept 1 to 20 handles.
 Dates use `YYYY-MM-DD`. `max_results` requests 1 to 20 posts in the answer.
 A retrieved sample is not a complete account archive.
 
-The default request allows up to five native search calls and 4096 output tokens.
+The default request allows up to five native search calls.
+The bridge omits `max_output_tokens` unless you set `X_SEARCH_MAX_OUTPUT_TOKENS`.
+Magpie and the model still apply their own output limits.
 Environment settings can change both limits. The server does not retry upstream requests automatically.
 
 The result contains these fields:
@@ -138,7 +140,7 @@ The server validates settings before accepting requests.
 | `X_SEARCH_MAGPIE_URL` | `http://127.0.0.1:3425/v1/responses` | Local magpie Responses endpoint |
 | `X_SEARCH_MODEL` | `grok-plugin/grok-4.7` | Grok model served by magpie |
 | `X_SEARCH_MAX_TOOL_CALLS` | `5` | Native search call limit, 1 to 100 |
-| `X_SEARCH_MAX_OUTPUT_TOKENS` | `4096` | Output token limit, 256 to 32768 |
+| `X_SEARCH_MAX_OUTPUT_TOKENS` | Unset | Optional output token limit, 256 to 32768; omitted from requests by default |
 | `X_SEARCH_TIMEOUT_SEC` | `150` | Total request timeout, 1 to 3600 seconds |
 | `X_SEARCH_WORKERS` | `4` | Concurrent searches per process, 1 to 32 |
 | `X_SEARCH_CACHE_TTL_SEC` | `300` | Cache lifetime; `0` disables caching and shared execution |
