@@ -86,24 +86,42 @@ class CacheTests(unittest.TestCase):
             self.assertEqual(db.execute("SELECT count(*) FROM leases").fetchone()[0], 0)
 
     def test_live_owner_renews_lease(self):
-        self.cache.lease_seconds = 0.15
-        started, release = threading.Event(), threading.Event()
+        self.cache.lease_seconds = 1
+        started, renewed, release = threading.Event(), threading.Event(), threading.Event()
+        initial_expiry = []
+        original_renew = self.cache.renew
+
+        def renew(key, owner):
+            changed = original_renew(key, owner)
+            if changed and initial_expiry and time.time() > initial_expiry[0]:
+                renewed.set()
+            return changed
+
+        self.cache.renew = renew
+
         def fetch():
+            with closing(sqlite3.connect(self.path)) as db, db:
+                initial_expiry.append(db.execute("SELECT expires FROM leases WHERE key='key'").fetchone()[0])
             started.set()
-            self.assertTrue(release.wait(2))
+            self.assertTrue(release.wait(6))
             return self.fetch()
-        with concurrent.futures.ThreadPoolExecutor(1) as executor:
-            future = executor.submit(self.run_cache, fetch=fetch)
-            self.assertTrue(started.wait(1))
-            try:
-                # The owner must remain live beyond the original lease duration.
-                time.sleep(0.25)
-                with closing(sqlite3.connect(self.path)) as db, db:
-                    expires = db.execute("SELECT expires FROM leases WHERE key='key'").fetchone()[0]
-                self.assertGreater(expires, time.time())
-            finally:
-                release.set()
-            self.assertEqual(future.result(timeout=1)["text"], "1")
+
+        scope = RequestScope(8)
+        try:
+            with concurrent.futures.ThreadPoolExecutor(1) as executor:
+                future = executor.submit(self.run_cache, scope=scope, fetch=fetch)
+                try:
+                    self.assertTrue(started.wait(2))
+                    # Observe a committed renewal after the first lease expired.
+                    self.assertTrue(renewed.wait(4), "Owner did not renew beyond its original lease")
+                    with closing(sqlite3.connect(self.path)) as db, db:
+                        expires = db.execute("SELECT expires FROM leases WHERE key='key'").fetchone()[0]
+                    self.assertGreater(expires, initial_expiry[0])
+                finally:
+                    release.set()
+                self.assertEqual(future.result(timeout=2)["text"], "1")
+        finally:
+            scope.close()
 
     def test_live_owner_is_not_replaced_when_waiter_times_out(self):
         self.cache.initialize()
