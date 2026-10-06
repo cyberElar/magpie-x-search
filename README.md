@@ -242,10 +242,11 @@ The `prepack` check rejects mismatched npm and MCP versions.
 
 For the first registry release:
 
-1. Run `npm test`.
-2. Run `npm pack --dry-run` to check package contents.
-3. Run `npm login --registry=https://registry.npmjs.org` to sign in.
-4. Run `npm publish --access public` and complete npm's authentication steps.
+1. Enable [two-factor authentication](https://docs.npmjs.com/configuring-two-factor-authentication/) in your npm account settings.
+2. Run `npm test`.
+3. Run `npm pack --dry-run` to check package contents.
+4. Run `npm login --registry=https://registry.npmjs.org` to sign in.
+5. Run `npm publish --access public` and complete npm's authentication steps.
 
 For later releases, configure a [trusted publisher](https://docs.npmjs.com/trusted-publishers/) in the npm package settings:
 
