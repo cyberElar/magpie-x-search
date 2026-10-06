@@ -7,6 +7,8 @@ GPT, Claude, DeepSeek, and other MCP clients receive the result through MCP.
 The server returns a summary, structured posts, source URLs, and search counts.
 The server also shares cached results and concurrent searches across local terminals.
 
+Licensed under the [MIT License](LICENSE).
+
 ## Setup
 
 Requires Python 3.10 or later, a running [magpie](https://usemagpie.ai), and a
