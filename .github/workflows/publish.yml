@@ -1,4 +1,4 @@
-name: Publish npm package
+name: Stage npm package
 
 on:
   workflow_dispatch:
@@ -11,34 +11,93 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: npm-publish
+  cancel-in-progress: false
+
 jobs:
-  publish:
+  build:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    outputs:
+      artifact-id: ${{ steps.upload.outputs.artifact-id }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Verify release tag
+        id: verify
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: node .github/scripts/verify-release.cjs
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ steps.verify.outputs.release-sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: '3.12'
+      - run: npm ci --ignore-scripts
+      - run: npm test
+      - name: Pack release
+        run: |
+          mkdir -p "$RUNNER_TEMP/npm-release"
+          npm pack --pack-destination "$RUNNER_TEMP/npm-release"
+          cd "$RUNNER_TEMP/npm-release"
+          sha256sum magpie-x-search-*.tgz > SHA256SUMS
+      - name: Upload release package
+        id: upload
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: npm-package-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/npm-release/
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
+      - name: Record release for approval
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+          RELEASE_SHA: ${{ steps.verify.outputs.release-sha }}
+          ARTIFACT_DIGEST: ${{ steps.upload.outputs.artifact-digest }}
+        run: |
+          {
+            printf 'Release tag: `%s`\n\n' "$RELEASE_TAG"
+            printf 'Release commit: `%s`\n\n' "$RELEASE_SHA"
+            printf 'Artifact SHA-256: `%s`\n\n' "$ARTIFACT_DIGEST"
+            printf 'Review this artifact before approving the npm-publish environment.\n'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: npm-publish
     permissions:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ inputs.tag }}
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: actions/setup-python@v7
-        with:
-          python-version: '3.12'
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
           package-manager-cache: false
-      - name: Verify release tag
-        env:
-          RELEASE_TAG: ${{ inputs.tag }}
-        run: |
-          node -e 'const p=require("./package.json"); if(process.env.RELEASE_TAG!==`v${p.version}`) process.exit(1)'
-          test "$(git describe --tags --exact-match)" = "$RELEASE_TAG"
-      - run: npm ci --ignore-scripts
-      - run: npm test
-      - run: npm pack
-      - run: npm publish ./magpie-x-search-*.tgz --access public --provenance
+      - name: Install npm with staged publishing support
+        run: npm install --global npm@12.2.0 --ignore-scripts --no-audit --no-fund
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          artifact-ids: ${{ needs.build.outputs.artifact-id }}
+          path: release
+          merge-multiple: true
+      - name: Verify release package
+        working-directory: release
+        run: sha256sum --check --strict SHA256SUMS
+      - name: Stage package for npm approval
+        working-directory: release
+        run: npm stage publish ./magpie-x-search-*.tgz --access public --provenance --ignore-scripts
