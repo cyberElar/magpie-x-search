@@ -1,6 +1,6 @@
 {
   "name": "magpie-x-search",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "MCP server for native Grok X search through local magpie OAuth, callable by any model.",
   "license": "MIT",
   "author": "cyberElar",

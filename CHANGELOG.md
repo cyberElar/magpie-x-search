@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.1 - 2026-10-19
+
+- Update the default Grok model to `grok/grok-4.7` for the current magpie provider name.
+
 ## 1.2.0 - 2026-10-07
 
 - Add the `magpie-x-search` npm command and `npx` support.

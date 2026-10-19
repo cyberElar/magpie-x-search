@@ -13,7 +13,7 @@ Licensed under the [MIT License](LICENSE).
 
 Requires Python 3.10 or later, a running [magpie](https://usemagpie.ai), and a
 signed-in Grok provider. The npm launcher also requires Node.js 22 or later.
-The default model is `grok-plugin/grok-4.7`.
+The default model is `grok/grok-4.7`.
 The package has no npm dependencies and requires no Python packages.
 
 1. Sign in to Grok in magpie through `@magpie-community/opencode-grok-auth`.
@@ -66,14 +66,14 @@ npx -y magpie-x-search
 For a pinned MCP registration, use:
 
 ```sh
-codex mcp add x-search -- npx -y magpie-x-search@1.2.0
+codex mcp add x-search -- npx -y magpie-x-search@1.2.1
 ```
 
 The [npm package page](https://www.npmjs.com/package/magpie-x-search) lists registry releases.
 The GitHub Release tarball remains an alternative installation source:
 
 ```sh
-npm install --global --allow-remote=root https://github.com/cyberElar/magpie-x-search/releases/download/v1.2.0/magpie-x-search-1.2.0.tgz
+npm install --global --allow-remote=root https://github.com/cyberElar/magpie-x-search/releases/download/v1.2.1/magpie-x-search-1.2.1.tgz
 ```
 
 npm 12 requires `--allow-remote=root` for this GitHub tarball.
@@ -180,7 +180,7 @@ The server validates settings before accepting requests.
 | --- | --- | --- |
 | `X_SEARCH_PYTHON` | Automatic detection | Python executable path for the npm launcher |
 | `X_SEARCH_MAGPIE_URL` | `http://127.0.0.1:3425/v1/responses` | Local magpie Responses endpoint |
-| `X_SEARCH_MODEL` | `grok-plugin/grok-4.7` | Grok model served by magpie |
+| `X_SEARCH_MODEL` | `grok/grok-4.7` | Grok model served by magpie |
 | `X_SEARCH_MAX_TOOL_CALLS` | `5` | Native search call limit, 1 to 100 |
 | `X_SEARCH_MAX_OUTPUT_TOKENS` | Unset | Optional output token limit, 256 to 32768; omitted from requests by default |
 | `X_SEARCH_TIMEOUT_SEC` | `150` | Total request timeout, 1 to 3600 seconds |
@@ -269,7 +269,7 @@ The repository does not need an npm token secret for that workflow.
 1. Set the same new version in `package.json` and `x_search_mcp.py`.
 2. Update `package-lock.json` with `npm install --package-lock-only --ignore-scripts`.
 3. Update the release URL in this README.
-4. Commit the release and push a matching tag, such as `v1.2.0`.
+4. Commit the release and push a matching tag, such as `v1.2.1`.
 5. Run the `Publish npm package` workflow with that tag.
 
 References:

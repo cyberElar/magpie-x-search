@@ -83,7 +83,7 @@ def number(env, key, default, minimum, maximum, integer=False):
 @dataclass(frozen=True)
 class Settings:
     endpoint: str = "http://127.0.0.1:3425/v1/responses"
-    model: str = "grok-plugin/grok-4.7"
+    model: str = "grok/grok-4.7"
     timeout: float = 150
     max_tool_calls: int = 5
     max_output_tokens: int | None = None
