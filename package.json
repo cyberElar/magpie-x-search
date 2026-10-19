@@ -22,7 +22,7 @@
   "files": ["launcher.cjs", "x_search_mcp.py", "search_backend.py", "search_cache.py"],
   "scripts": {
     "start": "node launcher.cjs",
-    "test": "node --test test_launcher.cjs test_package.cjs && node test_python.cjs",
+    "test": "node --test test_launcher.cjs test_package.cjs test_release.cjs && node test_python.cjs",
     "prepack": "node check_package.cjs",
     "prepublishOnly": "npm test"
   },
