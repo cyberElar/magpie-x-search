@@ -239,39 +239,6 @@ read both posts through MCP and confirmed two cache hits with the same retrieval
 Version 1.1 adds structured output, shared cache, concurrent calls, and cancellation.
 Version 1.2 adds the npm launcher and package distribution.
 
-## Publishing
-
-The package uses a `files` allowlist. The tarball contains the launcher, three
-Python runtime files, `package.json`, README, and MIT license.
-The package installs without download scripts or install scripts.
-The `prepack` check rejects mismatched npm and MCP versions.
-
-For the first registry release:
-
-1. Enable [two-factor authentication](https://docs.npmjs.com/configuring-two-factor-authentication/) in your npm account settings.
-2. Run `npm test`.
-3. Run `npm pack --dry-run` to check package contents.
-4. Run `npm login --registry=https://registry.npmjs.org` to sign in.
-5. Run `npm publish --access public` and complete npm's authentication steps.
-
-For later releases, configure a [trusted publisher](https://docs.npmjs.com/trusted-publishers/) in the npm package settings:
-
-| Setting | Value |
-| --- | --- |
-| GitHub owner | `cyberElar` |
-| Repository | `magpie-x-search` |
-| Workflow filename | `publish.yml` |
-| Allowed action | `npm publish` |
-
-The workflow uses npm OIDC authentication and publishes provenance metadata.
-The repository does not need an npm token secret for that workflow.
-
-1. Set the same new version in `package.json` and `x_search_mcp.py`.
-2. Update `package-lock.json` with `npm install --package-lock-only --ignore-scripts`.
-3. Update the release URL in this README.
-4. Commit the release and push a matching tag, such as `v1.2.1`.
-5. Run the `Publish npm package` workflow with that tag.
-
 References:
 
 - [xAI native X search](https://docs.x.ai/developers/tools/x-search)
